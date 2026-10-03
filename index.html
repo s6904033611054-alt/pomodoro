@@ -37,12 +37,36 @@ ul{list-style:none;margin:0;padding:0}#tasks li{display:flex;align-items:center;
 details{font-size:.9rem;color:var(--mute);background:var(--paper);border:1px solid #e8ebe5;border-radius:22px;padding:20px 24px;box-shadow:var(--shadow)}summary{cursor:pointer;color:var(--ink);font-weight:700;font-size:1rem;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px}summary::-webkit-details-marker{display:none}summary:after{content:'＋';font-size:1.2rem;color:var(--accent)}details[open] summary{margin-bottom:16px}details[open] summary:after{content:'−'}details p,details li{margin:9px 0}details ul{list-style:disc;padding-left:22px}a{color:var(--ink);text-underline-offset:3px}
 @media(max-width:820px){main{grid-template-columns:minmax(0,1fr);padding:24px 16px 48px;gap:16px}header{grid-column:1;flex-wrap:wrap}header:after{display:none}#timerPanel,#taskPanel,#musicPanel,#statsPanel,#trendPanel,#fatiguePanel,#settings,#researchPanel{grid-column:1;grid-row:auto}#timerPanel{padding:24px 22px}#taskPanel,#musicPanel,#statsPanel,#trendPanel,#fatiguePanel{padding:22px;border-radius:22px}.dial{width:min(82%,330px)}#time{font-size:clamp(3.8rem,13vw,5rem)}}
 @media(max-width:440px){main{padding:20px 12px 38px;gap:13px}header h1{font-size:1.35rem}header:before{width:42px;height:42px;border-radius:13px}#timerPanel{padding:21px 15px}.seg{gap:3px;padding:5px}.seg button{font-size:.78rem;padding:0 5px;min-height:42px}.dial{width:min(90%,310px)}#time{font-size:3.65rem}.ctrl{gap:8px}.ctrl .go{min-width:0;flex:1}.ctrl button{padding:0 14px}.stats{gap:7px}.stats>div{padding:14px 10px;border-radius:15px}.stats b{font-size:1.8rem}.stats span{font-size:.72rem}.week{gap:5px;height:130px}#taskPanel,#musicPanel,#statsPanel,#trendPanel,#fatiguePanel{padding:18px}#ytRes img{width:78px;height:56px}details{padding:18px}}
+/* Theme toggle + video list toggle */
+.theme{display:inline-flex;align-items:center;gap:8px;margin-left:auto;padding:0 16px;border-radius:999px;font-size:.85rem;font-weight:600;white-space:nowrap}.theme .ico{font-size:1.05rem;line-height:1}
+.ytt{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:100%;margin-top:12px;font-size:.88rem;font-weight:600}.ytt[hidden]{display:none}
+.chev{flex:none;width:9px;height:9px;margin:0 4px 0 2px;border-right:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s}.ytt.open .chev{transform:rotate(45deg)}
+/* Dark mode */
+html[data-theme=dark]{color-scheme:dark;--ink:#e9efef;--mute:#98a8ac;--bg:#0e1517;--paper:#172125;--line:#2a373c;--soft:#33251f;--shadow:0 18px 50px rgba(0,0,0,.35)}
+[data-theme=dark] body.break,[data-theme=dark] body.long{--soft:#1c3029}
+[data-theme=dark] header:before{background:var(--accent);color:#fff;box-shadow:none}
+[data-theme=dark] header:after,[data-theme=dark] .seg,[data-theme=dark] .ft{background:#222f34}
+[data-theme=dark] .seg button{color:#9fb0b4}
+[data-theme=dark] .seg button.on,[data-theme=dark] form button{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+[data-theme=dark] .cur-on{background:var(--ink)!important;color:var(--bg)!important;border-color:var(--ink)!important}
+[data-theme=dark] .trk{stroke:#2a373c}
+[data-theme=dark] input[type=text],[data-theme=dark] input[type=number],[data-theme=dark] select,[data-theme=dark] #setKey,[data-theme=dark] #tasks li button,[data-theme=dark] #ytRes button{background:#101a1d;border-color:var(--line)}
+[data-theme=dark] :is(#timerPanel,#taskPanel,#musicPanel,#statsPanel,#trendPanel,#fatiguePanel),[data-theme=dark] details{border-color:var(--line)}
+[data-theme=dark] .stats>div,[data-theme=dark] #insight{background:#1d292d;border-color:var(--line)}
+[data-theme=dark] #tasks li{border-bottom-color:var(--line)}
+[data-theme=dark] #reset{border-color:var(--line)}
+[data-theme=dark] li.done .tx{color:#66767a}
+[data-theme=dark] :is(#overdue,#rate){border-color:color-mix(in srgb,var(--accent) 40%,#172125)}
+@media(max-width:440px){.theme{width:44px;padding:0;justify-content:center}.theme #themeTxt{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 </style>
+<script>
+try{var t=JSON.parse(localStorage.getItem('pomo.theme'));if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t}catch(e){}
+</script>
 </head>
 <body>
 <main>
-<header><div><h1>Pomodoro</h1><p class="sub">พื้นที่เล็ก ๆ สำหรับงานที่สำคัญของคุณ</p></div></header>
+<header><div><h1>Pomodoro</h1><p class="sub">พื้นที่เล็ก ๆ สำหรับงานที่สำคัญของคุณ</p></div><button type="button" id="themeBtn" class="theme"><span class="ico" id="themeIco" aria-hidden="true">🌙</span><span id="themeTxt">โหมดกลางคืน</span></button></header>
 <section id="timerPanel">
   <div class="eyebrow"><span>FOCUS SESSION</span><span id="modeBadge">✳ พร้อมเริ่ม</span></div>
   <div class="seg" role="group" aria-label="โหมด"><button id="mFocus" class="on">โฟกัส 25</button><button id="mBreak">พัก 5</button><button id="mLong">พักยาว 15</button></div>
@@ -53,7 +77,7 @@ details{font-size:.9rem;color:var(--mute);background:var(--paper);border:1px sol
   <div id="rate" hidden><p>รอบที่แล้วเป็นอย่างไร? (1 น้อย – 5 มาก) <button class="lnk" id="skipRate">ข้าม</button></p><div class="row"><span>โฟกัส</span><span class="pick" data-k="focus"></span></div><div class="row"><span>เหนื่อย</span><span class="pick" data-k="tired"></span></div></div>
 </section>
 <section id="taskPanel"><h2>งานของวันนี้</h2><form id="taskForm"><input type="text" id="taskIn" placeholder="เช่น อ่านบทที่ 3 ฟิสิกส์" aria-label="ชื่องาน" maxlength="80" autocomplete="off"><button>เพิ่ม</button></form><ul id="tasks"></ul><p class="empty" id="noTask">ยังไม่มีงาน เพิ่มงานแรกด้านบน</p></section>
-<section id="musicPanel"><h2>เพลง / วิดีโอ</h2><form id="ytForm"><input type="text" id="ytIn" placeholder="ค้นหา หรือวางลิงก์ YouTube" aria-label="ค้นหาหรือวางลิงก์ YouTube" maxlength="200" autocomplete="off"><button id="ytGo">ค้นหา</button></form><div class="srow"><label for="ytCat">ค้นหาในหมวด</label><select id="ytCat"><option value="10">ดนตรี</option><option value="">ทั้งหมด</option></select></div><div class="srow"><label for="setMusic">เล่นตอนโฟกัส หยุดตอนพัก</label><input type="checkbox" id="setMusic"></div><p class="empty" id="ytMsg" role="status" aria-live="polite"></p><div id="ytBox" hidden><p class="empty" id="ytNow"></p><div class="ytwrap"><div id="ytFrame"></div></div></div><ul id="ytRes"></ul></section>
+<section id="musicPanel"><h2>เพลง / วิดีโอ</h2><form id="ytForm"><input type="text" id="ytIn" placeholder="ค้นหา หรือวางลิงก์ YouTube" aria-label="ค้นหาหรือวางลิงก์ YouTube" maxlength="200" autocomplete="off"><button id="ytGo">ค้นหา</button></form><div class="srow"><label for="ytCat">ค้นหาในหมวด</label><select id="ytCat"><option value="10">ดนตรี</option><option value="">ทั้งหมด</option></select></div><div class="srow"><label for="setMusic">เล่นตอนโฟกัส หยุดตอนพัก</label><input type="checkbox" id="setMusic"></div><p class="empty" id="ytMsg" role="status" aria-live="polite"></p><div id="ytBox" hidden><p class="empty" id="ytNow"></p><div class="ytwrap"><div id="ytFrame"></div></div></div><button type="button" id="ytToggle" class="ytt open" aria-expanded="true" aria-controls="ytRes" hidden><span class="chev" aria-hidden="true"></span><span id="ytToggleTxt">ซ่อนรายการวิดีโอ</span></button><ul id="ytRes"></ul></section>
 <section id="statsPanel"><h2>สถิติวันนี้</h2><div class="stats"><div><b id="sSess">0</b><span>รอบที่เสร็จ</span></div><div><b id="sMin">0</b><span>นาทีโฟกัส</span></div><div><b id="sTask">0</b><span>งานที่เสร็จ</span></div></div></section>
 <section id="trendPanel"><h2>7 วันที่ผ่านมา</h2><div class="week" id="week" role="img" aria-label="กราฟนาทีโฟกัสย้อนหลัง 7 วัน"></div><p class="empty" id="insight"></p></section>
 <section id="fatiguePanel"><h2>แนวโน้มของคุณ</h2><div id="fatigue"></div></section>
@@ -523,6 +547,7 @@ function showResults(items){
     box.append(tt,ch);b.append(img,box);b.setAttribute('aria-label','เล่น '+title);
     b.onclick=()=>playItem({video:id},title);li.append(b);ul.append(li);
   });
+  setYtList(true);
   if(!ul.children.length)ytMsg('ไม่พบผลลัพธ์ ลองคำค้นอื่น');
 }
 async function ytSearch(q){
@@ -551,7 +576,7 @@ async function ytSearch(q){
 $('ytForm').onsubmit=e=>{
   e.preventDefault();const v=$('ytIn').value.trim();if(!v)return;
   const it=parseYT(v);
-  if(it){$('ytRes').textContent='';playItem(it,'');return}
+  if(it){$('ytRes').textContent='';setYtList(true);playItem(it,'');return}
   ytSearch(v);
 };
 $('setMusic').onchange=()=>{settings.musicSync=$('setMusic').checked;saveSettings();ytMsg(settings.musicSync?'เปิดแล้ว: เริ่มจับเวลาโฟกัสแล้วเพลงจะเล่น พักแล้วเพลงจะหยุด (ถ้าเบราว์เซอร์บล็อกการเล่นอัตโนมัติ ให้กดเล่นเองในตัวเล่น)':'')};
@@ -561,6 +586,24 @@ $('setKey').onchange=()=>{
   settings.ytKey=v;saveSettings();setMsg(v?'บันทึก key ในเบราว์เซอร์นี้แล้ว':'ลบ key แล้ว');
 };
 if(!/^https?:$/.test(location.protocol))ytMsg('เปิดไฟล์จากเครื่องโดยตรง: ตัวเล่น YouTube จะแสดง Error 153 ให้ทดสอบผ่าน localhost หรือเว็บที่ deploy แล้ว');
+
+// --- video list show/hide (> chevron) ---
+function setYtList(open){
+  const ul=$('ytRes'),b=$('ytToggle'),n=ul.children.length;
+  ul.hidden=!open;b.hidden=!n;b.classList.toggle('open',open);b.setAttribute('aria-expanded',open);
+  $('ytToggleTxt').textContent=(open?'ซ่อนรายการวิดีโอ':'แสดงรายการวิดีโอ')+' ('+n+')';
+}
+$('ytToggle').onclick=()=>setYtList($('ytRes').hidden);
+
+// --- night mode ---
+function applyTheme(t,persistIt){
+  const d=t==='dark';document.documentElement.dataset.theme=d?'dark':'light';
+  $('themeIco').textContent=d?'☀️':'🌙';$('themeTxt').textContent=d?'โหมดกลางวัน':'โหมดกลางคืน';
+  $('themeBtn').setAttribute('aria-label',d?'สลับเป็นโหมดกลางวัน':'สลับเป็นโหมดกลางคืน');
+  if(persistIt)save('pomo.theme',d?'dark':'light');
+}
+applyTheme(document.documentElement.dataset.theme,false);
+$('themeBtn').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
 
 syncSettingsUI();
 setInterval(tick,250);

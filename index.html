@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--ink:#2a2230;--mute:#7a7081;--accent:#d9482f;--bg:#f7e9e4;--line:rgba(42,34,48,.12)}
-body.break{--accent:#2f7d5c;--bg:#e4f0e9}
+body.break,body.long{--accent:#2f7d5c;--bg:#e4f0e9}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;transition:background .6s}
 main{max-width:480px;margin:0 auto;padding:28px 20px 64px}
@@ -55,6 +55,37 @@ details{margin-top:40px;font-size:.9rem;color:var(--mute)}
 summary{cursor:pointer;color:var(--ink);font-weight:600;font-size:1rem}
 details p,details li{margin:8px 0}
 a{color:var(--ink)}
+#rate{margin-top:22px;padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+#rate p{margin:0 0 6px;display:flex;justify-content:space-between;align-items:center;font-size:.9rem}
+.row{display:flex;align-items:center;gap:10px;margin:6px 0}
+.row>span:first-child{width:56px;font-size:.9rem}
+.pick{display:flex;gap:6px}
+.pick button{min-height:40px;width:40px;padding:0;border-radius:50%;border-color:var(--line)}
+.pick button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.lnk{min-height:32px;border:0;padding:0 8px;color:var(--mute);text-decoration:underline;font-size:.85rem}
+.week{display:flex;gap:8px;align-items:flex-end;height:140px}
+.col{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:.75rem;color:var(--mute)}
+.bar{width:100%;max-width:34px;border-radius:8px 8px 3px 3px;background:var(--accent);opacity:.28}
+.col.now .bar{opacity:1}
+#insight{white-space:pre-line}
+#note{min-height:1.4em;margin:10px 0 0;text-align:center;font-size:.85rem}
+#overdue{margin-top:14px;padding:14px;border:1.5px solid var(--accent);border-radius:16px;background:rgba(255,255,255,.7)}
+#overdue p{margin:0 0 10px;font-size:.9rem}
+.odb{display:flex;gap:8px;flex-wrap:wrap}
+.odb button{min-height:44px;padding:0 16px;font-size:.9rem}
+.odb #odYes{background:var(--accent);border-color:var(--accent);color:#fff}
+.fr{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:.85rem}
+.fr>span:first-child{width:64px;flex:none}
+.fr>span:last-child{width:70px;flex:none;text-align:right;color:var(--mute);font-variant-numeric:tabular-nums}
+.ft{flex:1;height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.ff{display:block;height:100%;border-radius:999px;background:var(--accent)}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:8px 0;color:var(--ink)}
+.srow input[type=checkbox]{width:22px;height:22px;accent-color:var(--accent)}
+input[type=number]{width:88px;min-height:44px;padding:0 12px;border:1.5px solid var(--line);border-radius:999px;font:inherit;text-align:center;background:rgba(255,255,255,.7);color:var(--ink)}
+input:disabled{opacity:.5}
+.setbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.setbtns button{min-height:44px}
+#setMsg{min-height:1.4em;margin:10px 0 0}
 @media (prefers-reduced-motion:reduce){body{transition:none}}
 </style>
 </head>
@@ -68,6 +99,7 @@ a{color:var(--ink)}
 <div class="seg" role="group" aria-label="โหมด">
   <button id="mFocus" class="on">โฟกัส 25</button>
   <button id="mBreak">พัก 5</button>
+  <button id="mLong">พักยาว 15</button>
 </div>
 
 <div class="dial" id="dial" tabindex="0" role="slider" aria-label="ปรับเวลาที่เหลือ (นาที)" aria-valuemin="1" aria-valuemax="25" aria-valuenow="25">
@@ -85,6 +117,16 @@ a{color:var(--ink)}
   <button id="main" class="go">เริ่ม</button>
   <button id="reset">รีเซ็ต</button>
 </div>
+<p class="empty" id="note" role="status" aria-live="polite"></p>
+<div id="overdue" hidden role="alert">
+  <p id="odText"></p>
+  <div class="odb"><button id="odYes">เสร็จแล้ว นับรอบนี้</button><button id="odNo">ไม่ได้ทำ ไม่นับ</button></div>
+</div>
+<div id="rate" hidden>
+  <p>รอบที่แล้วเป็นอย่างไร? (1 น้อย – 5 มาก) <button class="lnk" id="skipRate">ข้าม</button></p>
+  <div class="row"><span>โฟกัส</span><span class="pick" data-k="focus"></span></div>
+  <div class="row"><span>เหนื่อย</span><span class="pick" data-k="tired"></span></div>
+</div>
 
 <h2>งานของวันนี้</h2>
 <form id="taskForm">
@@ -101,6 +143,27 @@ a{color:var(--ink)}
   <div><b id="sTask">0</b><span>งานที่เสร็จ</span></div>
 </div>
 
+<h2>7 วันที่ผ่านมา</h2>
+<div class="week" id="week" role="img" aria-label="กราฟนาทีโฟกัสย้อนหลัง 7 วัน"></div>
+<p class="empty" id="insight"></p>
+
+<h2>แนวโน้มของคุณ</h2>
+<div id="fatigue"></div>
+
+<details id="settings">
+  <summary>ตั้งค่าและข้อมูล</summary>
+  <p id="setHint" hidden>หยุดหรือรีเซ็ตตัวจับเวลาก่อน จึงจะเปลี่ยนเวลาได้</p>
+  <div class="srow"><label for="setFocus">โฟกัส (นาที)</label><input type="number" id="setFocus" min="1" max="120" inputmode="numeric"></div>
+  <div class="srow"><label for="setBreak">พักสั้น (นาที)</label><input type="number" id="setBreak" min="1" max="60" inputmode="numeric"></div>
+  <div class="srow"><label for="setLong">พักยาว (นาที)</label><input type="number" id="setLong" min="1" max="60" inputmode="numeric"></div>
+  <div class="srow"><label for="setSound">เสียงเตือนเมื่อหมดเวลา</label><input type="checkbox" id="setSound"></div>
+  <div class="srow"><label for="setNotify">แจ้งเตือนของเบราว์เซอร์</label><input type="checkbox" id="setNotify"></div>
+  <div class="srow"><label for="setWake">กันหน้าจอดับขณะจับเวลา</label><input type="checkbox" id="setWake"></div>
+  <p>เสียงและแจ้งเตือนทำงานได้ดีที่สุดเมื่อหน้านี้ยังเปิดอยู่ ถ้าล็อกจอ บางเครื่องอาจเตือนช้ากว่าเวลาจริง</p>
+  <div class="setbtns"><button id="exp">ส่งออก JSON</button><button id="imp">นำเข้า JSON</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>
+  <p id="setMsg" role="status" aria-live="polite"></p>
+</details>
+
 <details open>
   <summary>Research basis</summary>
   <p>งานวิจัยเรื่องการพักให้ผลไม่ตายตัว แอปนี้ไม่รับประกันว่าจะทำให้ผลการเรียนหรือสมาธิดีขึ้น</p>
@@ -114,38 +177,82 @@ a{color:var(--ink)}
 
 <script>
 const $=id=>document.getElementById(id);
-const DUR={focus:25*60000,break:5*60000};
+const DUR={focus:0,break:0,long:0};
+const GRACE=2*60000;   // a focus timer that ends up to 2 min late still counts automatically; later than that we ask
 const C=2*Math.PI*92;
 $('ring').style.strokeDasharray=C;
 const load=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 
-let timer=load('pomo.timer',{mode:'focus',status:'idle',endTs:0,remaining:DUR.focus});
+const pad=n=>String(n).padStart(2,'0');
+const LIM={focus:[1,120,25],break:[1,60,5],long:[1,60,15]};   // [min, max, default] in minutes
+const clampMin=(v,lo,hi,d)=>{if(v===''||v==null)return d;v=Math.round(Number(v));return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d};
+function cleanSettings(x){
+  x=x&&typeof x==='object'?x:{};const o={};
+  for(const k in LIM)o[k]=clampMin(x[k],LIM[k][0],LIM[k][1],LIM[k][2]);
+  o.sound=x.sound!==false;o.notify=x.notify===true;o.wake=x.wake!==false;
+  return o;
+}
+let settings=cleanSettings(load('pomo.settings',{}));
+const saveSettings=()=>save('pomo.settings',settings);
+function applyDur(){for(const k in LIM)DUR[k]=settings[k]*60000}
+applyDur();
+
+let timer=load('pomo.timer',null);
+if(!timer||!DUR[timer.mode]||!['idle','running','paused'].includes(timer.status)||(timer.status==='running'&&!Number.isFinite(timer.endTs))||!Number.isFinite(timer.remaining))
+  timer={mode:'focus',status:'idle',endTs:0,remaining:DUR.focus};
 timer.total=timer.total||DUR[timer.mode];
 let tasks=load('pomo.tasks',[]);
 let sessions=load('pomo.sessions',[]);
 let activeId=load('pomo.active',null);
+let pendingRate=load('pomo.rate',null);
+let overdueAsk=load('pomo.overdue',null);
 
 const saveTimer=()=>save('pomo.timer',timer);
 const left=()=>timer.status==='running'?Math.max(0,timer.endTs-Date.now()):timer.remaining;
+let noteT=0;
+function flash(t){const n=$('note');n.textContent=t;clearTimeout(noteT);noteT=setTimeout(()=>{n.textContent=''},6000)}
+const setMsg=t=>{$('setMsg').textContent=t};
 
-function setMode(m){timer={mode:m,status:'idle',endTs:0,remaining:DUR[m],total:DUR[m]};saveTimer();render()}
-function start(){timer.endTs=Date.now()+timer.remaining;timer.status='running';saveTimer();render()}
+// Ending a focus session early (reset / switching mode) keeps the time already focused as a "partial" record.
+// Partial records add focus minutes but are NOT counted as completed sessions.
+function logPartial(){
+  if(timer.mode!=='focus'||timer.status==='idle')return;
+  const l=left();if(l<=0)return;
+  const m=Math.floor((timer.total-l)/60000);
+  if(m<1)return;
+  sessions.push({id:Date.now(),date:today(),minutes:m,taskId:activeId,partial:true});
+  save('pomo.sessions',sessions);
+  flash('บันทึกเวลาที่โฟกัสไปแล้ว '+m+' นาที (รอบที่ทำไม่ครบ ไม่นับเป็นรอบที่เสร็จ)');
+}
+function setMode(m){
+  if(timer.status==='running'&&left()<=0)finish();   // never drop a session that just ended
+  logPartial();
+  timer={mode:m,status:'idle',endTs:0,remaining:DUR[m],total:DUR[m]};saveTimer();render();
+}
+function start(){unlockAudio();timer.endTs=Date.now()+timer.remaining;timer.status='running';saveTimer();render()}
 function pause(){timer.remaining=left();timer.status='paused';timer.endTs=0;saveTimer();render()}
 
 function finish(){
   if(timer.status!=='running')return;            // guard: finish only once
   const id=timer.endTs, wasFocus=timer.mode==='focus', mins=Math.max(1,Math.round(timer.total/60000));
-  const next=wasFocus?'break':'focus';
+  const away=Date.now()-id>GRACE;                // timer ended while the page was closed / asleep
+  const doneToday=sessions.filter(x=>x.date===today()&&!x.partial).length+(wasFocus?1:0);
+  const next=wasFocus?(doneToday%4===0?'long':'break'):'focus';
   timer={mode:next,status:'idle',endTs:0,remaining:DUR[next],total:DUR[next]};
   saveTimer();                                   // save state BEFORE recording
-  if(wasFocus&&!sessions.some(s=>s.id===id)){
-    sessions.push({id,date:today(),minutes:mins,taskId:activeId});save('pomo.sessions',sessions);
+  if(wasFocus){
+    if(away){overdueAsk={id,endTs:id,minutes:mins,taskId:activeId};save('pomo.overdue',overdueAsk)}   // ask, don't assume
+    else if(!sessions.some(s=>s.id===id)){
+      sessions.push({id,date:dkey(new Date(id)),minutes:mins,taskId:activeId});save('pomo.sessions',sessions);
+      pendingRate=id;save('pomo.rate',pendingRate);
+    }
   }
-  try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}
+  if(!away)notifyDone(wasFocus);
   render();
 }
+function clearOverdue(){overdueAsk=null;save('pomo.overdue',null)}
 
 function fmt(ms){const s=Math.ceil(ms/1000);return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')}
 
@@ -165,8 +272,17 @@ function tick(){
 
 function render(){
   document.body.className=timer.mode;
+  $('mFocus').textContent='โฟกัส '+settings.focus;
+  $('mBreak').textContent='พัก '+settings.break;
+  $('mLong').textContent='พักยาว '+settings.long;
+  ['setFocus','setBreak','setLong'].forEach(id=>{$(id).disabled=timer.status!=='idle'});
+  $('setHint').hidden=timer.status==='idle';
+  $('overdue').hidden=!overdueAsk;
+  if(overdueAsk){const d=new Date(overdueAsk.endTs);
+    $('odText').textContent='รอบโฟกัส '+overdueAsk.minutes+' นาที หมดเวลาตอน '+pad(d.getHours())+':'+pad(d.getMinutes())+' ขณะที่หน้านี้ไม่ได้เปิดอยู่ คุณทำรอบนี้เสร็จจริงไหม?'}
   $('mFocus').classList.toggle('on',timer.mode==='focus');
   $('mBreak').classList.toggle('on',timer.mode==='break');
+  $('mLong').classList.toggle('on',timer.mode==='long');
   $('main').textContent=timer.status==='running'?'พัก':timer.status==='paused'?'ทำต่อ':'เริ่ม';
   const t=tasks.find(x=>x.id===activeId&&!x.done);
   $('cur').textContent=timer.mode==='focus'?(t?t.text:'ยังไม่ได้เลือกงาน'):'ยืดเส้นยืดสาย พักสายตา';
@@ -182,7 +298,8 @@ function render(){
     cb.onchange=()=>{x.done=cb.checked;x.doneDate=x.done?today():null;if(x.done&&activeId===x.id)activeId=null;persist();render()};
     const box=document.createElement('div'),tx=document.createElement('span'),mt=document.createElement('span');
     tx.className='tx';tx.textContent=x.text;
-    mt.className='meta';mt.textContent=mine.length?mine.length+' รอบ · '+mins+' นาที':'ยังไม่มีรอบ';
+    mt.className='meta';const full=mine.filter(s=>!s.partial).length;
+    mt.textContent=full?full+' รอบ · '+mins+' นาที':mins?mins+' นาที (ยังไม่ครบรอบ)':'ยังไม่มีรอบ';
     box.append(tx,mt);lb.append(cb,box);li.append(lb);
     if(!x.done){const b=document.createElement('button');
       b.textContent=x.id===activeId?'กำลังทำ':'เลือก';if(x.id===activeId)b.className='cur-on';
@@ -193,10 +310,41 @@ function render(){
   });
   $('noTask').hidden=tasks.length>0;
   const td=today(),ss=sessions.filter(s=>s.date===td);
-  $('sSess').textContent=ss.length;
+  $('sSess').textContent=ss.filter(s=>!s.partial).length;
   $('sMin').textContent=ss.reduce((a,s)=>a+s.minutes,0);
   $('sTask').textContent=tasks.filter(x=>x.done&&x.doneDate===td).length;
+  renderExtras();
   tick();
+  syncWake();
+}
+function dkey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function streak(){
+  const days=new Set(sessions.map(x=>x.date));let n=0,d=new Date();
+  if(!days.has(dkey(d)))d.setDate(d.getDate()-1);
+  while(days.has(dkey(d))){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function renderExtras(){
+  $('rate').hidden=!pendingRate;
+  const wk=$('week');wk.textContent='';
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d)}
+  const mins=days.map(d=>sessions.filter(x=>x.date===dkey(d)).reduce((a,x)=>a+x.minutes,0));
+  const mx=Math.max(1,...mins);
+  days.forEach((d,i)=>{
+    const c=document.createElement('div');c.className='col'+(i===6?' now':'');
+    const v=document.createElement('span');v.textContent=mins[i]||'';
+    const b=document.createElement('div');b.className='bar';b.style.height=Math.max(4,mins[i]/mx*96)+'px';
+    const l=document.createElement('span');l.textContent=['อา','จ','อ','พ','พฤ','ศ','ส'][d.getDay()];
+    c.append(v,b,l);wk.append(c);
+  });
+  const set=new Set(days.map(dkey)),rated=sessions.filter(x=>set.has(x.date)&&x.focus&&x.tired);
+  let t='ต่อเนื่อง '+streak()+' วัน · รวม '+mins.reduce((a,b)=>a+b,0)+' นาทีใน 7 วัน';
+  if(rated.length>=3){
+    const av=k=>(rated.reduce((a,x)=>a+x[k],0)/rated.length).toFixed(1);
+    t+='\nจากข้อมูลของคุณ ('+rated.length+' รอบที่ให้คะแนน): โฟกัสเฉลี่ย '+av('focus')+'/5, เหนื่อยเฉลี่ย '+av('tired')+'/5 (ข้อมูลส่วนตัวจำนวนน้อย ไม่ใช่ข้อสรุปทางวิทยาศาสตร์)';
+  }
+  $('insight').textContent=t;
+  renderInsights();
 }
 function persist(){save('pomo.tasks',tasks);save('pomo.active',activeId)}
 
@@ -234,6 +382,30 @@ dial.onkeydown=e=>{
   const k={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(!k)return;
   e.preventDefault();scrubTo((Math.round(left()/60000)+k)*60000/DUR[timer.mode]);
 };
+// --- after-session rating (focus / tiredness, 1-5) ---
+let draft={};
+function closeRate(){
+  pendingRate=null;save('pomo.rate',null);draft={};
+  document.querySelectorAll('.pick button').forEach(x=>x.classList.remove('on'));render();
+}
+document.querySelectorAll('.pick').forEach(p=>{
+  for(let n=1;n<=5;n++){
+    const b=document.createElement('button');b.textContent=n;
+    b.setAttribute('aria-label',(p.dataset.k==='focus'?'โฟกัส ':'เหนื่อย ')+n);
+    b.onclick=()=>{
+      draft[p.dataset.k]=n;
+      p.querySelectorAll('button').forEach((x,i)=>x.classList.toggle('on',i+1===n));
+      if(draft.focus&&draft.tired){
+        const x=sessions.find(y=>y.id===pendingRate);
+        if(x){x.focus=draft.focus;x.tired=draft.tired;save('pomo.sessions',sessions)}
+        closeRate();
+      }
+    };
+    p.append(b);
+  }
+});
+$('skipRate').onclick=closeRate;
+$('mLong').onclick=()=>setMode('long');
 $('mFocus').onclick=()=>setMode('focus');
 $('mBreak').onclick=()=>setMode('break');
 $('main').onclick=()=>timer.status==='running'?pause():start();
@@ -243,9 +415,161 @@ $('taskForm').onsubmit=e=>{
   const t={id:Date.now(),text:v,done:false,doneDate:null};tasks.push(t);
   if(activeId===null)activeId=t.id;persist();$('taskIn').value='';render();
 };
+// --- sound / notification / screen wake lock ---
+let actx=null;
+function unlockAudio(){
+  try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+    if(!actx)actx=new A();if(actx.state==='suspended')actx.resume()}catch(e){}
+}
+function beep(n){
+  if(!settings.sound)return;unlockAudio();if(!actx)return;
+  try{for(let i=0;i<n;i++){
+    const t=actx.currentTime+0.02+i*0.3,o=actx.createOscillator(),g=actx.createGain();
+    o.type='sine';o.frequency.value=880;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.25,t+0.02);g.gain.linearRampToValueAtTime(0,t+0.2);
+    o.connect(g);g.connect(actx.destination);o.start(t);o.stop(t+0.22);
+  }}catch(e){}
+}
+function notifyDone(wasFocus){
+  beep(3);
+  try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+  if(settings.notify&&'Notification' in window&&Notification.permission==='granted'&&document.hidden){
+    try{new Notification(wasFocus?'หมดเวลาโฟกัสแล้ว':'หมดเวลาพักแล้ว',{body:wasFocus?'พักสักครู่ก่อนเริ่มรอบต่อไป':'พร้อมเริ่มรอบโฟกัสใหม่',tag:'pomodoro'})}catch(e){}
+  }
+}
+let wake=null,wakeBusy=false;
+const wantWake=()=>settings.wake&&timer.status==='running'&&document.visibilityState==='visible';
+async function syncWake(){
+  if(!('wakeLock' in navigator)||wakeBusy)return;
+  try{
+    if(wantWake()&&!wake){
+      wakeBusy=true;
+      const w=await navigator.wakeLock.request('screen');
+      wake=w;w.addEventListener('release',()=>{if(wake===w)wake=null});
+    }else if(!wantWake()&&wake){const w=wake;wake=null;await w.release()}
+  }catch(e){wake=null}
+  finally{wakeBusy=false}
+  if(!wantWake()&&wake)syncWake();   // state changed while the request was pending
+}
+
+// --- settings panel ---
+function syncSettingsUI(){
+  $('setFocus').value=settings.focus;$('setBreak').value=settings.break;$('setLong').value=settings.long;
+  if(settings.notify&&!('Notification' in window&&Notification.permission==='granted'))settings.notify=false;
+  $('setSound').checked=settings.sound;$('setNotify').checked=settings.notify;$('setWake').checked=settings.wake;
+  if(!('Notification' in window)){$('setNotify').disabled=true;$('setNotify').checked=false}
+  if(!('wakeLock' in navigator)){$('setWake').disabled=true;$('setWake').checked=false}
+}
+[['setFocus','focus'],['setBreak','break'],['setLong','long']].forEach(([id,k])=>{
+  $(id).onchange=()=>{
+    if(timer.status!=='idle'){$(id).value=settings[k];return}
+    settings[k]=clampMin($(id).value,LIM[k][0],LIM[k][1],settings[k]);
+    $(id).value=settings[k];saveSettings();applyDur();setMode(timer.mode);
+  };
+});
+$('setSound').onchange=()=>{settings.sound=$('setSound').checked;saveSettings();if(settings.sound)beep(1)};
+$('setWake').onchange=()=>{settings.wake=$('setWake').checked;saveSettings();syncWake()};
+$('setNotify').onchange=()=>{
+  const cb=$('setNotify');
+  if(!cb.checked){settings.notify=false;saveSettings();return}
+  if(!('Notification' in window)){cb.checked=false;setMsg('เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน');return}
+  if(Notification.permission==='denied'){cb.checked=false;setMsg('การแจ้งเตือนถูกบล็อกอยู่ ต้องเปิดในตั้งค่าของเบราว์เซอร์ก่อน');return}
+  Promise.resolve(Notification.requestPermission()).then(p=>{
+    settings.notify=p==='granted';cb.checked=settings.notify;saveSettings();
+    setMsg(settings.notify?'เปิดแล้ว จะแจ้งเตือนเมื่อหน้านี้ถูกซ่อนอยู่เบื้องหลัง (บนมือถือบางเครื่องอาจไม่แสดง)':'ไม่ได้รับอนุญาตให้แจ้งเตือน');
+  }).catch(()=>{cb.checked=false;settings.notify=false});
+};
+
+// --- overdue focus session: ask instead of assuming ---
+$('odYes').onclick=()=>{
+  const o=overdueAsk;
+  if(o&&!sessions.some(s=>s.id===o.id)){
+    sessions.push({id:o.id,date:dkey(new Date(o.endTs)),minutes:o.minutes,taskId:o.taskId});save('pomo.sessions',sessions);
+  }
+  clearOverdue();render();
+};
+$('odNo').onclick=()=>{
+  clearOverdue();
+  // finish() assumed this round counted when choosing the next mode; undo that if the timer is still untouched
+  if(timer.status==='idle'&&timer.mode==='long'&&timer.remaining===DUR.long){
+    timer={mode:'break',status:'idle',endTs:0,remaining:DUR.break,total:DUR.break};saveTimer();
+  }
+  render();
+};
+
+// --- personal trends: fatigue by session order + best focus hour (rule-based, from the user's own ratings) ---
+function renderInsights(){
+  const box=$('fatigue');box.textContent='';
+  const add=t=>{const p=document.createElement('p');p.className='empty';p.textContent=t;box.append(p)};
+  const done=sessions.filter(s=>!s.partial),rated=done.filter(s=>s.focus&&s.tired);
+  if(rated.length<5){add('ต้องมีรอบที่ให้คะแนนอย่างน้อย 5 รอบ (ตอนนี้มี '+rated.length+') จึงจะเห็นแนวโน้มความเหนื่อยและช่วงเวลาที่โฟกัสดี');return}
+  const ord=new Map(),cnt={};
+  done.slice().sort((a,b)=>a.id-b.id).forEach(s=>{cnt[s.date]=(cnt[s.date]||0)+1;ord.set(s,cnt[s.date])});
+  const g={1:[],2:[],3:[],4:[]},avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+  rated.forEach(s=>g[Math.min(4,ord.get(s))].push(s.tired));
+  add('ความเหนื่อยเฉลี่ย (1–5) ตามลำดับรอบในวัน');
+  for(let k=1;k<=4;k++){
+    const row=document.createElement('div');row.className='fr';
+    const l=document.createElement('span'),tr=document.createElement('span'),f=document.createElement('span'),v=document.createElement('span');
+    l.textContent='รอบที่ '+(k===4?'4+':k);tr.className='ft';f.className='ff';
+    if(g[k].length){const a=avg(g[k]);f.style.width=(a/5*100)+'%';v.textContent=a.toFixed(1)+' ('+g[k].length+' รอบ)'}else v.textContent='–';
+    tr.append(f);row.append(l,tr,v);box.append(row);
+  }
+  const early=g[1].concat(g[2]),late=g[3].concat(g[4]);
+  if(early.length>=2&&late.length>=2){
+    const e=avg(early),l=avg(late);
+    add(l-e>=1
+      ?'เหนื่อยเฉลี่ยตั้งแต่รอบที่ 3 ('+l.toFixed(1)+') สูงกว่ารอบที่ 1–2 ('+e.toFixed(1)+') ลองพักยาวเร็วขึ้นหรือลดเวลาโฟกัสในตั้งค่า แล้วดูว่าตัวเลขเปลี่ยนไหม'
+      :'ยังไม่พบว่าความเหนื่อยเพิ่มขึ้นชัดเจนเมื่อทำหลายรอบ (รอบที่ 1–2: '+e.toFixed(1)+', รอบที่ 3 ขึ้นไป: '+l.toFixed(1)+')');
+  }else add('ข้อมูลรอบที่ 3 ขึ้นไปยังน้อยเกินไปที่จะเทียบความเหนื่อย');
+  const hr={};
+  rated.forEach(s=>{const h=new Date(s.id-s.minutes*60000).getHours();(hr[h]=hr[h]||[]).push(s.focus)});
+  let best=null;
+  Object.keys(hr).forEach(k=>{const a=hr[k];if(a.length<2)return;const m=avg(a);if(!best||m>best.m||(m===best.m&&a.length>best.n))best={h:+k,m,n:a.length}});
+  add(best?'ช่วงที่คุณให้คะแนนโฟกัสสูงสุด: '+pad(best.h)+':00–'+pad(best.h)+':59 (เฉลี่ย '+best.m.toFixed(1)+'/5 จาก '+best.n+' รอบ)':'ยังหาช่วงเวลาที่โฟกัสดีไม่ได้ (ต้องมีอย่างน้อย 2 รอบในชั่วโมงเดียวกัน)');
+  add('เป็นข้อมูลของคุณเองจากจำนวนรอบน้อย ใช้เป็นแนวทางเท่านั้น ไม่ใช่ข้อสรุปทางวิทยาศาสตร์');
+}
+
+// --- JSON backup: export / import ---
+function exportJSON(){
+  try{
+    const data={app:'pomodoro-student',version:1,exportedAt:new Date().toISOString(),settings,tasks,sessions,activeId};
+    const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+    const a=document.createElement('a');a.href=url;a.download='pomodoro-backup-'+today()+'.json';
+    document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+    setMsg('ส่งออกแล้ว: '+tasks.length+' งาน, '+sessions.length+' รายการเวลา');
+  }catch(e){setMsg('ส่งออกไม่สำเร็จ ลองใหม่อีกครั้ง')}
+}
+const DATE_RE=/^\d{4}-\d{2}-\d{2}$/,isRate=v=>Number.isInteger(v)&&v>=1&&v<=5;
+async function importJSON(file){
+  let d;
+  try{
+    if(file.size>5e6)throw 0;
+    d=JSON.parse(await file.text());
+    if(!d||d.app!=='pomodoro-student'||!Array.isArray(d.tasks)||!Array.isArray(d.sessions))throw 0;
+  }catch(e){setMsg('ไฟล์ไม่ถูกต้อง ใช้ไฟล์ที่ส่งออกจากแอปนี้เท่านั้น');return}
+  const T=d.tasks.filter(x=>x&&Number.isFinite(x.id)&&typeof x.text==='string'&&x.text.trim())
+    .map(x=>({id:x.id,text:x.text.slice(0,80),done:!!x.done,doneDate:typeof x.doneDate==='string'&&DATE_RE.test(x.doneDate)?x.doneDate:null}));
+  const S=d.sessions.filter(x=>x&&Number.isFinite(x.id)&&typeof x.date==='string'&&DATE_RE.test(x.date)&&Number.isFinite(x.minutes)&&x.minutes>=1&&x.minutes<=600)
+    .map(x=>{const o={id:x.id,date:x.date,minutes:Math.round(x.minutes),taskId:Number.isFinite(x.taskId)?x.taskId:null};
+      if(x.partial===true)o.partial=true;if(isRate(x.focus))o.focus=x.focus;if(isRate(x.tired))o.tired=x.tired;return o});
+  if(!confirm('การนำเข้าจะแทนที่งานและสถิติทั้งหมดในเครื่องนี้ด้วย '+T.length+' งาน และ '+S.length+' รายการเวลา ดำเนินการต่อไหม?'))return;
+  tasks=T;sessions=S;
+  activeId=T.some(t=>t.id===d.activeId&&!t.done)?d.activeId:null;
+  if(d.settings)settings=cleanSettings(d.settings);
+  pendingRate=null;save('pomo.rate',null);clearOverdue();
+  save('pomo.sessions',sessions);saveSettings();persist();applyDur();syncSettingsUI();
+  timer={mode:'focus',status:'idle',endTs:0,remaining:DUR.focus,total:DUR.focus};saveTimer();
+  render();setMsg('นำเข้าแล้ว: '+T.length+' งาน, '+S.length+' รายการเวลา');
+}
+$('exp').onclick=exportJSON;
+$('imp').onclick=()=>$('impFile').click();
+$('impFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importJSON(f)};
+
+syncSettingsUI();
 setInterval(tick,250);
 (function loop(){if(timer.status==='running')draw();requestAnimationFrame(loop)})();
-document.addEventListener('visibilitychange',tick);
+document.addEventListener('visibilitychange',()=>{tick();syncWake()});
 render();
 </script>
 </body>

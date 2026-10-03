@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Pomodoro สำหรับนักศึกษา</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -86,6 +87,19 @@ input:disabled{opacity:.5}
 .setbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .setbtns button{min-height:44px}
 #setMsg{min-height:1.4em;margin:10px 0 0}
+select{font:inherit;min-height:44px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:rgba(255,255,255,.7);color:var(--ink)}
+select:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+#setKey{width:100%;min-height:44px;padding:0 16px;border:1.5px solid var(--line);border-radius:999px;font:inherit;background:rgba(255,255,255,.7);color:var(--ink)}
+#ytMsg{min-height:1.4em;margin:6px 0 0}
+.ytwrap{position:relative;aspect-ratio:16/9;margin-top:8px;border-radius:16px;overflow:hidden;background:#000}
+.ytwrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#ytNow{margin:12px 0 0}
+#ytRes{margin-top:10px}
+#ytRes li{margin:0 0 8px}
+#ytRes button{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:6px 12px 6px 6px;border:1.5px solid var(--line);border-radius:16px;text-align:left}
+#ytRes img{width:80px;height:60px;flex:none;object-fit:cover;border-radius:10px;background:var(--line)}
+#ytRes .tt{display:block;font-size:.9rem;line-height:1.35;overflow-wrap:anywhere}
+#ytRes .ch{display:block;font-size:.78rem;color:var(--mute)}
 @media (prefers-reduced-motion:reduce){body{transition:none}}
 </style>
 </head>
@@ -136,6 +150,20 @@ input:disabled{opacity:.5}
 <ul id="tasks"></ul>
 <p class="empty" id="noTask">ยังไม่มีงาน เพิ่มงานแรกด้านบน</p>
 
+<h2>เพลง / วิดีโอ</h2>
+<form id="ytForm">
+  <input type="text" id="ytIn" placeholder="ค้นหา หรือวางลิงก์ YouTube" aria-label="ค้นหาหรือวางลิงก์ YouTube" maxlength="200" autocomplete="off">
+  <button id="ytGo">ค้นหา</button>
+</form>
+<div class="srow"><label for="ytCat">ค้นหาในหมวด</label><select id="ytCat"><option value="10">ดนตรี</option><option value="">ทั้งหมด</option></select></div>
+<div class="srow"><label for="setMusic">เล่นตอนโฟกัส หยุดตอนพัก</label><input type="checkbox" id="setMusic"></div>
+<p class="empty" id="ytMsg" role="status" aria-live="polite"></p>
+<div id="ytBox" hidden>
+  <p class="empty" id="ytNow"></p>
+  <div class="ytwrap"><div id="ytFrame"></div></div>
+</div>
+<ul id="ytRes"></ul>
+
 <h2>สถิติวันนี้</h2>
 <div class="stats">
   <div><b id="sSess">0</b><span>รอบที่เสร็จ</span></div>
@@ -160,6 +188,9 @@ input:disabled{opacity:.5}
   <div class="srow"><label for="setNotify">แจ้งเตือนของเบราว์เซอร์</label><input type="checkbox" id="setNotify"></div>
   <div class="srow"><label for="setWake">กันหน้าจอดับขณะจับเวลา</label><input type="checkbox" id="setWake"></div>
   <p>เสียงและแจ้งเตือนทำงานได้ดีที่สุดเมื่อหน้านี้ยังเปิดอยู่ ถ้าล็อกจอ บางเครื่องอาจเตือนช้ากว่าเวลาจริง</p>
+  <div class="srow"><label for="setKey">YouTube API key (ไม่บังคับ ใช้ค้นหาเท่านั้น)</label></div>
+  <input type="password" id="setKey" autocomplete="off" spellcheck="false" placeholder="AIza...">
+  <p>เก็บไว้ในเบราว์เซอร์นี้เท่านั้น และไม่รวมในไฟล์สำรอง JSON ถ้าไม่ใส่ก็ยังวางลิงก์ YouTube เล่นได้</p>
   <div class="setbtns"><button id="exp">ส่งออก JSON</button><button id="imp">นำเข้า JSON</button><input type="file" id="impFile" accept="application/json,.json" hidden></div>
   <p id="setMsg" role="status" aria-live="polite"></p>
 </details>
@@ -178,6 +209,7 @@ input:disabled{opacity:.5}
 <script>
 const $=id=>document.getElementById(id);
 const DUR={focus:0,break:0,long:0};
+const YT_API_KEY='';   // optional: paste a referrer-restricted YouTube Data API key here (or enter one in Settings)
 const GRACE=2*60000;   // a focus timer that ends up to 2 min late still counts automatically; later than that we ask
 const C=2*Math.PI*92;
 $('ring').style.strokeDasharray=C;
@@ -186,12 +218,14 @@ const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 
 const pad=n=>String(n).padStart(2,'0');
+const KEY_RE=/^[A-Za-z0-9_-]{20,80}$/;
 const LIM={focus:[1,120,25],break:[1,60,5],long:[1,60,15]};   // [min, max, default] in minutes
 const clampMin=(v,lo,hi,d)=>{if(v===''||v==null)return d;v=Math.round(Number(v));return Number.isFinite(v)?Math.min(hi,Math.max(lo,v)):d};
 function cleanSettings(x){
   x=x&&typeof x==='object'?x:{};const o={};
   for(const k in LIM)o[k]=clampMin(x[k],LIM[k][0],LIM[k][1],LIM[k][2]);
-  o.sound=x.sound!==false;o.notify=x.notify===true;o.wake=x.wake!==false;
+  o.sound=x.sound!==false;o.notify=x.notify===true;o.wake=x.wake!==false;o.musicSync=x.musicSync===true;
+  o.ytKey=typeof x.ytKey==='string'&&KEY_RE.test(x.ytKey.trim())?x.ytKey.trim():'';
   return o;
 }
 let settings=cleanSettings(load('pomo.settings',{}));
@@ -316,6 +350,7 @@ function render(){
   renderExtras();
   tick();
   syncWake();
+  syncMusic();
 }
 function dkey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function streak(){
@@ -457,6 +492,7 @@ function syncSettingsUI(){
   $('setFocus').value=settings.focus;$('setBreak').value=settings.break;$('setLong').value=settings.long;
   if(settings.notify&&!('Notification' in window&&Notification.permission==='granted'))settings.notify=false;
   $('setSound').checked=settings.sound;$('setNotify').checked=settings.notify;$('setWake').checked=settings.wake;
+  $('setMusic').checked=settings.musicSync;$('setKey').value=settings.ytKey;
   if(!('Notification' in window)){$('setNotify').disabled=true;$('setNotify').checked=false}
   if(!('wakeLock' in navigator)){$('setWake').disabled=true;$('setWake').checked=false}
 }
@@ -533,7 +569,7 @@ function renderInsights(){
 // --- JSON backup: export / import ---
 function exportJSON(){
   try{
-    const data={app:'pomodoro-student',version:1,exportedAt:new Date().toISOString(),settings,tasks,sessions,activeId};
+    const data={app:'pomodoro-student',version:1,exportedAt:new Date().toISOString(),settings:Object.assign({},settings,{ytKey:''}),tasks,sessions,activeId};
     const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
     const a=document.createElement('a');a.href=url;a.download='pomodoro-backup-'+today()+'.json';
     document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
@@ -556,7 +592,7 @@ async function importJSON(file){
   if(!confirm('การนำเข้าจะแทนที่งานและสถิติทั้งหมดในเครื่องนี้ด้วย '+T.length+' งาน และ '+S.length+' รายการเวลา ดำเนินการต่อไหม?'))return;
   tasks=T;sessions=S;
   activeId=T.some(t=>t.id===d.activeId&&!t.done)?d.activeId:null;
-  if(d.settings)settings=cleanSettings(d.settings);
+  if(d.settings){const keep=settings.ytKey;settings=cleanSettings(d.settings);settings.ytKey=keep}
   pendingRate=null;save('pomo.rate',null);clearOverdue();
   save('pomo.sessions',sessions);saveSettings();persist();applyDur();syncSettingsUI();
   timer={mode:'focus',status:'idle',endTs:0,remaining:DUR.focus,total:DUR.focus};saveTimer();
@@ -565,6 +601,112 @@ async function importJSON(file){
 $('exp').onclick=exportJSON;
 $('imp').onclick=()=>$('impFile').click();
 $('impFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importJSON(f)};
+
+// --- YouTube: search (own API key) / paste link, played in the official embedded player ---
+const ID_RE=/^[A-Za-z0-9_-]{11}$/,LIST_RE=/^[A-Za-z0-9_-]{10,64}$/;
+const apiKey=()=>settings.ytKey||YT_API_KEY;
+const ytMsg=t=>{$('ytMsg').textContent=t};
+const YT_ERR={2:'ลิงก์วิดีโอไม่ถูกต้อง',5:'เบราว์เซอร์เล่นวิดีโอนี้ไม่ได้',100:'ไม่พบวิดีโอ หรือวิดีโอถูกตั้งเป็นส่วนตัว',101:'เจ้าของวิดีโอไม่อนุญาตให้เล่นนอก YouTube',150:'เจ้าของวิดีโอไม่อนุญาตให้เล่นนอก YouTube',
+  153:'YouTube ไม่ได้รับที่มาของหน้าเว็บ (ถ้าเปิดไฟล์จากเครื่องจะเล่นไม่ได้ ให้เปิดผ่านเว็บที่ deploy แล้วหรือ localhost)'};
+function parseYT(v){
+  let u;try{u=new URL(/^https?:\/\//i.test(v)?v:'https://'+v)}catch(e){return null}
+  const h=u.hostname.replace(/^www\.|^m\.|^music\./,'');
+  if(!['youtube.com','youtu.be','youtube-nocookie.com'].includes(h))return null;
+  let id=null;
+  if(h==='youtu.be')id=u.pathname.slice(1).split('/')[0];
+  else if(u.pathname==='/watch')id=u.searchParams.get('v');
+  else{const m=u.pathname.match(/^\/(embed|shorts|live|v)\/([^/?]+)/);if(m)id=m[2]}
+  if(id&&ID_RE.test(id))return {video:id};
+  const list=u.searchParams.get('list');
+  if(list&&LIST_RE.test(list)&&u.pathname==='/playlist')return {list};
+  return null;
+}
+const decodeHtml=t=>{const a=document.createElement('textarea');a.innerHTML=String(t);return a.value};   // decodes &amp; &#39; etc. as plain text (tags are not parsed)
+
+let ytPlayer=null,ytReady=false,ytLoading=false,ytPending=null,ytHas=false;const ytWait=[];
+function loadYT(cb){
+  if(window.YT&&window.YT.Player){cb();return}
+  ytWait.push(cb);if(ytLoading)return;ytLoading=true;
+  window.onYouTubeIframeAPIReady=()=>{ytWait.splice(0).forEach(f=>f())};
+  const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';
+  sc.onerror=()=>{ytLoading=false;ytWait.length=0;ytMsg('โหลดตัวเล่น YouTube ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่')};
+  document.head.append(sc);
+}
+function ytLoadItem(it){
+  if(it.list)ytPlayer.loadPlaylist({list:it.list,listType:'playlist'});else ytPlayer.loadVideoById(it.video);
+}
+function playItem(it,title){
+  ytMsg('');$('ytBox').hidden=false;$('ytNow').textContent=title||'กำลังเล่นจากลิงก์ที่วาง';ytHas=true;
+  loadYT(()=>{
+    if(ytPlayer&&ytReady){ytLoadItem(it);return}
+    ytPending=it;if(ytPlayer)return;
+    const pv={playsinline:1,rel:0};if(/^https?:$/.test(location.protocol))pv.origin=location.origin;
+    ytPlayer=new window.YT.Player('ytFrame',{width:'100%',height:'100%',playerVars:pv,events:{
+      onReady:()=>{ytReady=true;if(ytPending){const p=ytPending;ytPending=null;ytLoadItem(p)}},
+      onError:e=>ytMsg(YT_ERR[e.data]||'เล่นวิดีโอนี้ไม่ได้ (รหัส '+e.data+')')
+    }});
+  });
+}
+// optional: play while a focus timer is running, pause otherwise (only reacts to changes, so manual control still works)
+let musicRun=null;
+function syncMusic(){
+  const run=timer.status==='running'&&timer.mode==='focus';
+  if(musicRun===null){musicRun=run;return}
+  if(run===musicRun)return;
+  musicRun=run;
+  if(settings.musicSync&&ytHas&&ytReady&&ytPlayer){try{run?ytPlayer.playVideo():ytPlayer.pauseVideo()}catch(e){}}
+}
+
+const ytCache=new Map();let ytBusy=false;
+function showResults(items){
+  const ul=$('ytRes');ul.textContent='';
+  items.forEach(it=>{
+    const id=it.id&&it.id.videoId,sn=it.snippet||{};if(!id||!ID_RE.test(id))return;
+    const li=document.createElement('li'),b=document.createElement('button'),img=document.createElement('img'),box=document.createElement('span'),tt=document.createElement('span'),ch=document.createElement('span');
+    const th=sn.thumbnails&&(sn.thumbnails.default||sn.thumbnails.medium),title=decodeHtml(sn.title||'');
+    img.alt='';img.loading='lazy';if(th&&typeof th.url==='string'&&th.url.startsWith('https://i.ytimg.com/'))img.src=th.url;
+    tt.className='tt';tt.textContent=title;ch.className='ch';ch.textContent=decodeHtml(sn.channelTitle||'');
+    box.append(tt,ch);b.append(img,box);b.setAttribute('aria-label','เล่น '+title);
+    b.onclick=()=>playItem({video:id},title);li.append(b);ul.append(li);
+  });
+  if(!ul.children.length)ytMsg('ไม่พบผลลัพธ์ ลองคำค้นอื่น');
+}
+async function ytSearch(q){
+  const key=apiKey();
+  if(!key){ytMsg('ยังไม่ได้ใส่ YouTube API key จึงค้นหาไม่ได้ แต่วางลิงก์วิดีโอหรือเพลย์ลิสต์ YouTube เพื่อเล่นได้เลย (ใส่ key ได้ใน ตั้งค่าและข้อมูล)');return}
+  const cat=$('ytCat').value,ck=cat+'|'+q.toLowerCase();
+  if(ytCache.has(ck)){ytMsg('');showResults(ytCache.get(ck));return}
+  if(ytBusy)return;ytBusy=true;$('ytGo').disabled=true;ytMsg('กำลังค้นหา...');
+  try{
+    const p=new URLSearchParams({part:'snippet',type:'video',videoEmbeddable:'true',safeSearch:'moderate',maxResults:'8',q,key});
+    if(cat)p.set('videoCategoryId',cat);
+    const r=await fetch('https://www.googleapis.com/youtube/v3/search?'+p);
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){
+      const why=d&&d.error&&d.error.errors&&d.error.errors[0]&&d.error.errors[0].reason||'';
+      ytMsg(/quota|limitExceeded/i.test(why)?'โควต้าค้นหาของ YouTube วันนี้หมดแล้ว ลองใหม่พรุ่งนี้ หรือวางลิงก์วิดีโอแทน'
+        :/keyInvalid|badRequest/i.test(why)||r.status===400?'API key ไม่ถูกต้อง ตรวจสอบอีกครั้ง'
+        :r.status===403?'key นี้ใช้จากเว็บนี้ไม่ได้ ตรวจการจำกัด HTTP referrer และการเปิดใช้ YouTube Data API v3'
+        :'ค้นหาไม่สำเร็จ (รหัส '+r.status+')');
+      return;
+    }
+    ytMsg('');const items=Array.isArray(d.items)?d.items:[];ytCache.set(ck,items);showResults(items);
+  }catch(e){ytMsg('เชื่อมต่อ YouTube ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองใหม่')}
+  finally{ytBusy=false;$('ytGo').disabled=false}
+}
+$('ytForm').onsubmit=e=>{
+  e.preventDefault();const v=$('ytIn').value.trim();if(!v)return;
+  const it=parseYT(v);
+  if(it){$('ytRes').textContent='';playItem(it,'');return}
+  ytSearch(v);
+};
+$('setMusic').onchange=()=>{settings.musicSync=$('setMusic').checked;saveSettings();ytMsg(settings.musicSync?'เปิดแล้ว: เริ่มจับเวลาโฟกัสแล้วเพลงจะเล่น พักแล้วเพลงจะหยุด (ถ้าเบราว์เซอร์บล็อกการเล่นอัตโนมัติ ให้กดเล่นเองในตัวเล่น)':'')};
+$('setKey').onchange=()=>{
+  const v=$('setKey').value.trim();
+  if(v&&!KEY_RE.test(v)){$('setKey').value=settings.ytKey;setMsg('รูปแบบ API key ไม่ถูกต้อง');return}
+  settings.ytKey=v;saveSettings();setMsg(v?'บันทึก key ในเบราว์เซอร์นี้แล้ว':'ลบ key แล้ว');
+};
+if(!/^https?:$/.test(location.protocol))ytMsg('เปิดไฟล์จากเครื่องโดยตรง: ตัวเล่น YouTube จะแสดง Error 153 ให้ทดสอบผ่าน localhost หรือเว็บที่ deploy แล้ว');
 
 syncSettingsUI();
 setInterval(tick,250);

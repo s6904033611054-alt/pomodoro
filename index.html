@@ -26,7 +26,7 @@ button,input,select{font:inherit}button{min-height:44px;padding:0 18px;border-ra
 /* Main cards */
 #timerPanel,#taskPanel,#musicPanel,#statsPanel,#trendPanel,#fatiguePanel{background:var(--paper);border:1px solid #e8ebe5;border-radius:26px;padding:26px;box-shadow:var(--shadow);min-width:0}
 #timerPanel{grid-column:1;grid-row:2 / span 2;padding:28px 32px 24px;position:relative;overflow:hidden}#timerPanel:after{content:'';position:absolute;width:230px;height:230px;border-radius:50%;background:var(--soft);top:-145px;right:-95px;pointer-events:none}#timerPanel>*{position:relative;z-index:1}#timerPanel .eyebrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:20px;color:var(--mute);font-size:.78rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase}#timerPanel .eyebrow span:last-child{color:var(--accent);background:var(--soft);padding:5px 10px;border-radius:999px;letter-spacing:0;text-transform:none}
-#taskPanel{grid-column:2;grid-row:2}#musicPanel{grid-column:2;grid-row:3}#statsPanel{grid-column:1/-1;grid-row:4}#trendPanel{grid-column:1;grid-row:5}#fatiguePanel{grid-column:2;grid-row:5}#settings{grid-column:1/-1;grid-row:6}#researchPanel{grid-column:1/-1;grid-row:7}
+#taskPanel{grid-column:2;grid-row:2}#musicPanel{grid-column:2;grid-row:3}#statsPanel{grid-column:1/-1;grid-row:4}#fatiguePanel{grid-column:1/-1;grid-row:5}#settings{grid-column:1/-1;grid-row:6}#researchPanel{grid-column:1/-1;grid-row:7}
 #overdue,#rate{margin-top:18px;padding:16px;border:1px solid color-mix(in srgb,var(--accent) 35%,white);border-radius:18px;background:var(--soft)}#overdue p{margin:0 0 10px;font-size:.9rem}.odb{display:flex;gap:8px;flex-wrap:wrap}.odb button{min-height:42px;padding:0 14px;font-size:.88rem}.odb #odYes{background:var(--accent);border-color:var(--accent);color:white}
 #rate{padding:15px 17px}#rate p{margin:0 0 7px;display:flex;justify-content:space-between;align-items:center;font-size:.9rem;gap:10px}.row{display:flex;align-items:center;gap:10px;margin:7px 0}.row>span:first-child{width:55px;font-size:.88rem}.pick{display:flex;gap:7px}.pick button{min-height:35px;width:35px;padding:0;border-radius:11px;border-color:var(--line)}.pick button.on{background:var(--accent);border-color:var(--accent);color:#fff}.lnk{min-height:30px;border:0;padding:0 5px;color:var(--mute);text-decoration:underline;font-size:.82rem;background:transparent}
 form{display:flex;gap:8px;margin-bottom:8px}input[type=text]{flex:1;min-width:0;min-height:48px;padding:0 15px;border:1px solid #e0e5de;border-radius:13px;font:inherit;background:#f8f9f5;color:var(--ink)}form button{border-color:var(--ink);background:var(--ink);color:#fff;font-weight:600;min-width:70px}
@@ -59,6 +59,7 @@ html[data-theme=dark]{color-scheme:dark;--ink:#e9efef;--mute:#98a8ac;--bg:#0e151
 [data-theme=dark] :is(#overdue,#rate){border-color:color-mix(in srgb,var(--accent) 40%,#172125)}
 @media(max-width:440px){.theme{width:44px;padding:0;justify-content:center}.theme #themeTxt{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.tools{display:flex;gap:8px;margin-top:14px}.tools select{flex:1;min-width:0}.tools button{flex:none;min-width:96px}.lk{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--line);border-radius:13px;background:var(--paper);color:var(--ink);text-decoration:none;font-size:.9rem}.lk:hover{box-shadow:0 7px 18px #17252b12}.lk:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 </style>
 <script>
 try{var t=JSON.parse(localStorage.getItem('pomo.theme'));if(t!=='dark'&&t!=='light')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.documentElement.dataset.theme=t}catch(e){}
@@ -76,11 +77,9 @@ try{var t=JSON.parse(localStorage.getItem('pomo.theme'));if(t!=='dark'&&t!=='lig
   <div id="overdue" hidden role="alert"><p id="odText"></p><div class="odb"><button id="odYes">เสร็จแล้ว นับรอบนี้</button><button id="odNo">ไม่ได้ทำ ไม่นับ</button></div></div>
   <div id="rate" hidden><p>รอบที่แล้วเป็นอย่างไร? (1 น้อย – 5 มาก) <button class="lnk" id="skipRate">ข้าม</button></p><div class="row"><span>โฟกัส</span><span class="pick" data-k="focus"></span></div><div class="row"><span>เหนื่อย</span><span class="pick" data-k="tired"></span></div></div>
 </section>
-<section id="taskPanel"><h2>งานของวันนี้</h2><form id="taskForm"><input type="text" id="taskIn" placeholder="เช่น อ่านบทที่ 3 ฟิสิกส์" aria-label="ชื่องาน" maxlength="80" autocomplete="off"><button>เพิ่ม</button></form><ul id="tasks"></ul><p class="empty" id="noTask">ยังไม่มีงาน เพิ่มงานแรกด้านบน</p></section>
+<section id="taskPanel"><h2>งานของวันนี้</h2><form id="taskForm"><input type="text" id="taskIn" placeholder="เช่น อ่านบทที่ 3 ฟิสิกส์" aria-label="ชื่องาน" maxlength="80" autocomplete="off"><button>เพิ่ม</button></form><ul id="tasks"></ul><p class="empty" id="noTask">ยังไม่มีงาน เพิ่มงานแรกด้านบน</p><div class="tools"><select id="aiSel" aria-label="เลือก AI"><option value="gemini">Gemini</option><option value="chatgpt">ChatGPT</option><option value="claude">Claude</option></select><button type="button" id="aiGo">ถาม AI</button></div><p class="empty" style="font-size:.8rem">เปิดเว็บ AI ที่เลือกในแท็บใหม่ คำตอบอาจไม่ถูกต้อง ตรวจก่อนใช้</p><div class="tools"><a class="lk" href="https://classroom.google.com/" target="_blank" rel="noopener">Classroom</a><a class="lk" href="https://www.canva.com/" target="_blank" rel="noopener">Canva</a><a class="lk" href="https://mail.google.com/" target="_blank" rel="noopener">อีเมล</a></div></section>
 <section id="musicPanel"><h2>เพลง / วิดีโอ</h2><form id="ytForm"><input type="text" id="ytIn" placeholder="ค้นหา หรือวางลิงก์ YouTube" aria-label="ค้นหาหรือวางลิงก์ YouTube" maxlength="200" autocomplete="off"><button id="ytGo">ค้นหา</button></form><div class="srow"><label for="ytCat">ค้นหาในหมวด</label><select id="ytCat"><option value="10">ดนตรี</option><option value="">ทั้งหมด</option></select></div><div class="srow"><label for="setMusic">เล่นตอนโฟกัส หยุดตอนพัก</label><input type="checkbox" id="setMusic"></div><p class="empty" id="ytMsg" role="status" aria-live="polite"></p><div id="ytBox" hidden><p class="empty" id="ytNow"></p><div class="ytwrap"><div id="ytFrame"></div></div></div><button type="button" id="ytToggle" class="ytt open" aria-expanded="true" aria-controls="ytRes" hidden><span class="chev" aria-hidden="true"></span><span id="ytToggleTxt">ซ่อนรายการวิดีโอ</span></button><ul id="ytRes"></ul></section>
 <section id="statsPanel"><h2>สถิติวันนี้</h2><div class="stats"><div><b id="sSess">0</b><span>รอบที่เสร็จ</span></div><div><b id="sMin">0</b><span>นาทีโฟกัส</span></div><div><b id="sTask">0</b><span>งานที่เสร็จ</span></div></div></section>
-<section id="trendPanel"><h2>7 วันที่ผ่านมา</h2><div class="week" id="week" role="img" aria-label="กราฟนาทีโฟกัสย้อนหลัง 7 วัน"></div><p class="empty" id="insight"></p></section>
-<section id="fatiguePanel"><h2>แนวโน้มของคุณ</h2><div id="fatigue"></div></section>
 <details id="settings"><summary>ตั้งค่าและข้อมูล</summary><p id="setHint" hidden>หยุดหรือรีเซ็ตตัวจับเวลาก่อน จึงจะเปลี่ยนเวลาได้</p><div class="srow"><label for="setFocus">โฟกัส (นาที)</label><input type="number" id="setFocus" min="1" max="120" inputmode="numeric"></div><div class="srow"><label for="setBreak">พักสั้น (นาที)</label><input type="number" id="setBreak" min="1" max="60" inputmode="numeric"></div><div class="srow"><label for="setLong">พักยาว (นาที)</label><input type="number" id="setLong" min="1" max="60" inputmode="numeric"></div><div class="srow"><label for="setSound">เสียงเตือนเมื่อหมดเวลา</label><input type="checkbox" id="setSound"></div><div class="srow"><label for="setNotify">แจ้งเตือนของเบราว์เซอร์</label><input type="checkbox" id="setNotify"></div><div class="srow"><label for="setWake">กันหน้าจอดับขณะจับเวลา</label><input type="checkbox" id="setWake"></div><p>เสียงและแจ้งเตือนทำงานได้ดีที่สุดเมื่อหน้านี้ยังเปิดอยู่ ถ้าล็อกจอ บางเครื่องอาจเตือนช้ากว่าเวลาจริง</p><div class="srow"><label for="setKey">YouTube API key (ไม่บังคับ ใช้ค้นหาเท่านั้น)</label></div><input type="password" id="setKey" autocomplete="off" spellcheck="false" placeholder="AIza..."><p>เก็บไว้ในเบราว์เซอร์นี้เท่านั้น และไม่รวมในไฟล์สำรอง JSON ถ้าไม่ใส่ก็ยังวางลิงก์ YouTube เล่นได้</p><div class="setbtns"><button id="exp">ส่งออก JSON</button><button id="imp">นำเข้า JSON</button><input type="file" id="impFile" accept="application/json,.json" hidden></div><p id="setMsg" role="status" aria-live="polite"></p></details>
 <details id="researchPanel" open><summary>Research basis</summary><p>งานวิจัยเรื่องการพักให้ผลไม่ตายตัว แอปนี้ไม่รับประกันว่าจะทำให้ผลการเรียนหรือสมาธิดีขึ้น</p><ul><li>Albulescu et al. (2022), meta-analysis ของการพักสั้น: พบผลขนาดเล็กแต่มีนัยสำคัญต่อพลังงาน (vigor, d = .36) และความเหนื่อยล้า (d = .35) แต่ไม่พบผลต่อประสิทธิภาพโดยรวมอย่างมีนัยสำคัญ (d = .16) งานนี้เน้นการพักระหว่างงาน (มักเป็นบริบทการทำงาน) ผลอาจไม่เหมือนกันในนักศึกษา. <a href="https://doi.org/10.1371/journal.pone.0272460" target="_blank" rel="noopener">PLOS ONE 17(8): e0272460</a></li><li>Smits, Wenzel &amp; de Bruin (2025): นักศึกษา 94 คน เรียนต่อเนื่อง 2 ชั่วโมง กลุ่ม Pomodoro มีความเหนื่อยเพิ่มเร็วขึ้นและแรงจูงใจลดเร็วขึ้นเมื่อเทียบกับกลุ่มพักเอง แต่ระดับโดยรวมไม่ต่างกันระหว่างกลุ่ม (ตัวอย่างเล็ก ทำออนไลน์ครั้งเดียว). <a href="https://doi.org/10.3390/bs15070861" target="_blank" rel="noopener">Behavioral Sciences 15(7): 861</a></li></ul><p>สรุป: 25/5 เป็นค่าเริ่มต้นที่นิยม ไม่ใช่ค่าที่พิสูจน์ว่าดีที่สุด</p></details>
 </main>
@@ -239,25 +238,6 @@ function streak(){
 }
 function renderExtras(){
   $('rate').hidden=!pendingRate;
-  const wk=$('week');wk.textContent='';
-  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d)}
-  const mins=days.map(d=>sessions.filter(x=>x.date===dkey(d)).reduce((a,x)=>a+x.minutes,0));
-  const mx=Math.max(1,...mins);
-  days.forEach((d,i)=>{
-    const c=document.createElement('div');c.className='col'+(i===6?' now':'');
-    const v=document.createElement('span');v.textContent=mins[i]||'';
-    const b=document.createElement('div');b.className='bar';b.style.height=Math.max(4,mins[i]/mx*96)+'px';
-    const l=document.createElement('span');l.textContent=['อา','จ','อ','พ','พฤ','ศ','ส'][d.getDay()];
-    c.append(v,b,l);wk.append(c);
-  });
-  const set=new Set(days.map(dkey)),rated=sessions.filter(x=>set.has(x.date)&&x.focus&&x.tired);
-  let t='ต่อเนื่อง '+streak()+' วัน · รวม '+mins.reduce((a,b)=>a+b,0)+' นาทีใน 7 วัน';
-  if(rated.length>=3){
-    const av=k=>(rated.reduce((a,x)=>a+x[k],0)/rated.length).toFixed(1);
-    t+='\nจากข้อมูลของคุณ ('+rated.length+' รอบที่ให้คะแนน): โฟกัสเฉลี่ย '+av('focus')+'/5, เหนื่อยเฉลี่ย '+av('tired')+'/5 (ข้อมูลส่วนตัวจำนวนน้อย ไม่ใช่ข้อสรุปทางวิทยาศาสตร์)';
-  }
-  $('insight').textContent=t;
-  renderInsights();
 }
 function persist(){save('pomo.tasks',tasks);save('pomo.active',activeId)}
 
@@ -420,39 +400,6 @@ $('odNo').onclick=()=>{
   render();
 };
 
-// --- personal trends: fatigue by session order + best focus hour (rule-based, from the user's own ratings) ---
-function renderInsights(){
-  const box=$('fatigue');box.textContent='';
-  const add=t=>{const p=document.createElement('p');p.className='empty';p.textContent=t;box.append(p)};
-  const done=sessions.filter(s=>!s.partial),rated=done.filter(s=>s.focus&&s.tired);
-  if(rated.length<5){add('ต้องมีรอบที่ให้คะแนนอย่างน้อย 5 รอบ (ตอนนี้มี '+rated.length+') จึงจะเห็นแนวโน้มความเหนื่อยและช่วงเวลาที่โฟกัสดี');return}
-  const ord=new Map(),cnt={};
-  done.slice().sort((a,b)=>a.id-b.id).forEach(s=>{cnt[s.date]=(cnt[s.date]||0)+1;ord.set(s,cnt[s.date])});
-  const g={1:[],2:[],3:[],4:[]},avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
-  rated.forEach(s=>g[Math.min(4,ord.get(s))].push(s.tired));
-  add('ความเหนื่อยเฉลี่ย (1–5) ตามลำดับรอบในวัน');
-  for(let k=1;k<=4;k++){
-    const row=document.createElement('div');row.className='fr';
-    const l=document.createElement('span'),tr=document.createElement('span'),f=document.createElement('span'),v=document.createElement('span');
-    l.textContent='รอบที่ '+(k===4?'4+':k);tr.className='ft';f.className='ff';
-    if(g[k].length){const a=avg(g[k]);f.style.width=(a/5*100)+'%';v.textContent=a.toFixed(1)+' ('+g[k].length+' รอบ)'}else v.textContent='–';
-    tr.append(f);row.append(l,tr,v);box.append(row);
-  }
-  const early=g[1].concat(g[2]),late=g[3].concat(g[4]);
-  if(early.length>=2&&late.length>=2){
-    const e=avg(early),l=avg(late);
-    add(l-e>=1
-      ?'เหนื่อยเฉลี่ยตั้งแต่รอบที่ 3 ('+l.toFixed(1)+') สูงกว่ารอบที่ 1–2 ('+e.toFixed(1)+') ลองพักยาวเร็วขึ้นหรือลดเวลาโฟกัสในตั้งค่า แล้วดูว่าตัวเลขเปลี่ยนไหม'
-      :'ยังไม่พบว่าความเหนื่อยเพิ่มขึ้นชัดเจนเมื่อทำหลายรอบ (รอบที่ 1–2: '+e.toFixed(1)+', รอบที่ 3 ขึ้นไป: '+l.toFixed(1)+')');
-  }else add('ข้อมูลรอบที่ 3 ขึ้นไปยังน้อยเกินไปที่จะเทียบความเหนื่อย');
-  const hr={};
-  rated.forEach(s=>{const h=new Date(s.id-s.minutes*60000).getHours();(hr[h]=hr[h]||[]).push(s.focus)});
-  let best=null;
-  Object.keys(hr).forEach(k=>{const a=hr[k];if(a.length<2)return;const m=avg(a);if(!best||m>best.m||(m===best.m&&a.length>best.n))best={h:+k,m,n:a.length}});
-  add(best?'ช่วงที่คุณให้คะแนนโฟกัสสูงสุด: '+pad(best.h)+':00–'+pad(best.h)+':59 (เฉลี่ย '+best.m.toFixed(1)+'/5 จาก '+best.n+' รอบ)':'ยังหาช่วงเวลาที่โฟกัสดีไม่ได้ (ต้องมีอย่างน้อย 2 รอบในชั่วโมงเดียวกัน)');
-  add('เป็นข้อมูลของคุณเองจากจำนวนรอบน้อย ใช้เป็นแนวทางเท่านั้น ไม่ใช่ข้อสรุปทางวิทยาศาสตร์');
-}
-
 // --- JSON backup: export / import ---
 function exportJSON(){
   try{
@@ -613,6 +560,15 @@ function applyTheme(t,persistIt){
 }
 applyTheme(document.documentElement.dataset.theme,false);
 $('themeBtn').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
+
+// choose an AI site; it opens in a new tab (these sites cannot be embedded)
+const AI={gemini:['https://gemini.google.com/app','Gemini'],chatgpt:['https://chatgpt.com/','ChatGPT'],claude:['https://claude.ai/new','Claude']};
+{const k=load('pomo.ai','gemini');$('aiSel').value=AI[k]?k:'gemini'}
+$('aiSel').onchange=()=>save('pomo.ai',$('aiSel').value);
+$('aiGo').onclick=()=>{
+  const [url]=AI[$('aiSel').value]||AI.gemini;
+  window.open(url,'_blank','noopener');
+};
 
 syncSettingsUI();
 setInterval(tick,250);
